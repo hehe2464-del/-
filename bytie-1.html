@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Бытие — расписание</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B0F1A;
+    --surface: #131A2A;
+    --surface2: #1B2436;
+    --line: #263047;
+    --text: #E9E4D8;
+    --muted: #8A93A6;
+    --amber: #E8A33D;
+    --teal: #4FB6A8;
+    --rose: #C8607A;
+    --violet: #8B7FD1;
+    --gray: #6B7280;
+    --flame: #E4623F;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'IBM Plex Sans', sans-serif; min-height:100vh;}
+  body{
+    background-image: radial-gradient(ellipse at 50% -10%, #1A2438 0%, var(--bg) 55%);
+  }
+  h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; margin:0;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+
+  .wrap{max-width:520px; margin:0 auto; padding:22px 16px 60px;}
+
+  header.top{display:flex; flex-direction:column; gap:4px; margin-bottom:18px;}
+  header.top .eyebrow{color:var(--muted); font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-family:'JetBrains Mono',monospace;}
+  header.top h1{font-size:28px; letter-spacing:-0.01em;}
+  header.top .sub{color:var(--muted); font-size:13.5px; margin-top:2px;}
+
+  /* day tabs */
+  .days{display:flex; gap:6px; margin:18px 0 14px; overflow-x:auto; padding-bottom:2px;}
+  .day-btn{
+    flex:0 0 auto; padding:8px 13px; border-radius:100px; border:1px solid var(--line);
+    background:var(--surface); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .day-btn.active{background:var(--amber); border-color:var(--amber); color:#1A1204; font-weight:700;}
+
+  /* clock */
+  .clock-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:20px;
+    display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:18px;
+    position:relative; overflow:hidden;
+  }
+  .clock-card::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(circle at 50% 12%, rgba(232,163,61,0.08), transparent 60%);
+  }
+  svg.dial{width:100%; max-width:320px; height:auto; display:block;}
+  .now-label{font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--amber); letter-spacing:.05em;}
+
+  .legend{display:flex; flex-wrap:wrap; gap:8px 14px; justify-content:center; font-size:12px; color:var(--muted);}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  /* blocks list */
+  .section-title{display:flex; align-items:center; justify-content:space-between; margin:26px 0 10px;}
+  .section-title h2{font-size:17px;}
+  .add-btn{
+    background:var(--surface2); border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:7px 12px; font-size:13px; cursor:pointer; font-family:inherit;
+  }
+  .add-btn:active{transform:scale(0.97);}
+
+  .block-item{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px;
+  }
+  .block-bar{width:4px; align-self:stretch; border-radius:3px; flex:0 0 auto;}
+  .block-info{flex:1; min-width:0;}
+  .block-time{font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--muted);}
+  .block-label{font-size:14.5px; margin-top:1px;}
+  .block-del{background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:4px 8px; line-height:1;}
+  .block-del:active{color:var(--flame);}
+
+  .empty{color:var(--muted); font-size:13.5px; text-align:center; padding:22px 10px; border:1px dashed var(--line); border-radius:14px;}
+
+  /* add form */
+  .form-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px;
+    margin-bottom:8px; display:none; flex-direction:column; gap:10px;
+  }
+  .form-card.open{display:flex;}
+  .form-row{display:flex; gap:8px;}
+  .form-row > div{flex:1; display:flex; flex-direction:column; gap:4px;}
+  label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+  input[type=time], input[type=text], select{
+    background:var(--surface2); border:1px solid var(--line); color:var(--text);
+    border-radius:9px; padding:9px 10px; font-size:14px; font-family:inherit; width:100%;
+  }
+  .type-grid{display:flex; flex-wrap:wrap; gap:6px;}
+  .type-chip{
+    padding:6px 11px; border-radius:100px; font-size:12.5px; cursor:pointer; border:1.5px solid transparent;
+    color:#0B0F1A; font-weight:600;
+  }
+  .type-chip.selected{outline:2px solid var(--text); outline-offset:2px;}
+  .form-actions{display:flex; gap:8px; margin-top:4px;}
+  .btn-primary, .btn-ghost{flex:1; padding:11px; border-radius:10px; border:none; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;}
+  .btn-primary{background:var(--amber); color:#1A1204;}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--muted);}
+
+  /* timers */
+  .timers{display:grid; grid-template-columns:1fr; gap:14px; margin-top:26px;}
+  .timer-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:20px;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+  }
+  .timer-card h3{font-size:15px; color:var(--muted); font-weight:500; letter-spacing:.03em; text-transform:uppercase; font-family:'IBM Plex Sans';}
+  .timer-display{font-family:'JetBrains Mono',monospace; font-size:52px; font-weight:700; letter-spacing:.02em; line-height:1;}
+  .timer-phase{font-size:13px; color:var(--muted); font-family:'JetBrains Mono',monospace;}
+  .timer-controls{display:flex; gap:8px; margin-top:4px;}
+  .tbtn{
+    padding:10px 18px; border-radius:11px; border:none; font-family:inherit; font-weight:600; font-size:14px; cursor:pointer;
+  }
+  .tbtn.start{background:var(--amber); color:#1A1204;}
+  .tbtn.stop{background:var(--surface2); color:var(--text); border:1px solid var(--line);}
+  .cycles{display:flex; gap:5px; margin-top:2px;}
+  .cycle-dot{width:8px; height:8px; border-radius:50%; background:var(--line);}
+  .cycle-dot.done{background:var(--amber);}
+  .pomo-stats{font-size:12px; color:var(--muted); margin-top:-2px;}
+
+  .notif-row{margin-bottom:14px;}
+  .notif-btn{
+    background:var(--surface2); border:1px solid var(--line); color:var(--muted);
+    border-radius:100px; padding:7px 13px; font-size:12.5px; cursor:pointer; font-family:'JetBrains Mono',monospace;
+  }
+  .notif-btn.active{background:rgba(79,182,168,0.15); border-color:var(--teal); color:var(--teal);}
+
+  .block-item{cursor:pointer; transition:background .15s ease;}
+  .block-item:active{background:var(--surface2);}
+  .form-card .form-hint{font-size:11.5px; color:var(--muted); margin-top:-4px;}
+
+  .free-inputs{display:flex; gap:8px; align-items:center; margin-bottom:2px;}
+  .free-inputs input{width:70px; text-align:center;}
+  .mode-toggle{display:flex; gap:6px; background:var(--surface2); padding:3px; border-radius:100px; margin-bottom:4px;}
+  .mode-toggle button{
+    border:none; background:transparent; color:var(--muted); padding:6px 14px; border-radius:100px; font-size:12.5px; cursor:pointer; font-family:inherit;
+  }
+  .mode-toggle button.active{background:var(--teal); color:#08201C; font-weight:600;}
+
+  .pomo-type-toggle{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:2px;}
+  .pomo-type-btn{
+    border:1px solid var(--line); background:var(--surface2); color:var(--muted);
+    padding:6px 12px; border-radius:100px; font-size:12px; cursor:pointer; font-family:inherit; transition:all .15s ease;
+  }
+  .pomo-type-btn.active{color:#0B0F1A; font-weight:700; border-color:transparent;}
+  .pomo-type-btn:disabled{opacity:.5; cursor:default;}
+  .pomo-type-btn.resolved{border-width:2px;}
+  .pomo-type-btn.due{position:relative;}
+  .pomo-type-btn.due::after{
+    content:''; position:absolute; top:3px; right:3px; width:6px; height:6px; border-radius:50%; background:var(--rose);
+  }
+
+  .pomo-adjust{display:flex; align-items:center; justify-content:center; gap:10px; margin-top:-2px;}
+  .padj-btn{
+    width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--surface2);
+    color:var(--text); font-size:15px; cursor:pointer; font-family:'JetBrains Mono',monospace; line-height:1;
+  }
+  .padj-btn:active{transform:scale(0.94);}
+  .padj-hint{font-size:11px; color:var(--muted); min-width:56px; text-align:center;}
+
+  .pomo-type-btn.add-new{border-style:dashed; color:var(--muted);}
+  .pomo-addtype-form{
+    display:flex; flex-direction:column; gap:8px; background:var(--surface2); border:1px solid var(--line);
+    border-radius:12px; padding:12px; margin-top:-4px; width:100%;
+  }
+  .pomo-addtype-form input[type=text]{width:100%;}
+  .pomo-addtype-actions{display:flex; gap:8px; justify-content:flex-end;}
+  .pomo-custom-list{display:flex; flex-direction:column; gap:6px;}
+  .pcl-row{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted);}
+  .pcl-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
+  .pcl-label{flex:1; text-align:left;}
+  .pcl-del{background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:2px 6px; line-height:1;}
+  .pcl-del:active{color:var(--flame);}
+
+  .pomo-type-breakdown{display:flex; flex-direction:column; gap:8px; margin-top:14px;}
+  .ptb-row{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px;}
+  .ptb-dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto;}
+  .ptb-label{flex:1; font-size:13.5px;}
+  .ptb-nums{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); text-align:right;}
+
+  .foot-note{text-align:center; color:var(--muted); font-size:11.5px; margin-top:28px; line-height:1.6;}
+
+  .view-tabs{display:flex; gap:5px; background:var(--surface2); padding:4px; border-radius:14px; margin-bottom:18px;}
+  .view-tab{flex:1; padding:10px; border-radius:10px; border:none; background:transparent; color:var(--muted); font-family:'IBM Plex Sans'; font-weight:600; font-size:13.5px; cursor:pointer;}
+  .view-tab.active{background:var(--amber); color:#1A1204;}
+
+  .stats-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;}
+  .stat-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 6px; text-align:center;}
+  .stat-num{font-family:'JetBrains Mono',monospace; font-size:23px; font-weight:700; color:var(--amber);}
+  .stat-label{font-size:10.5px; color:var(--muted); margin-top:3px; text-transform:uppercase; letter-spacing:.04em;}
+
+  .chart-hint{font-size:11.5px; color:var(--muted); text-align:center; margin-top:-4px;}
+  .pomo-list-day{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--amber);
+    text-transform:uppercase; letter-spacing:.08em; margin:14px 0 6px; text-align:left;
+  }
+  .pomo-list-day:first-child{margin-top:2px;}
+  #pomoBlocksList .block-item{cursor:default;}
+
+  ::-webkit-scrollbar{height:0; width:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">00:00 — 08:00</div>
+    <h1>Бытие</h1>
+    <div class="sub">Циферблат суток, помидоры, свободное время</div>
+  </header>
+
+  <div class="view-tabs" id="viewTabs">
+    <button class="view-tab active" data-view="schedule">Расписание</button>
+    <button class="view-tab" data-view="history">История</button>
+  </div>
+
+  <div id="viewSchedule">
+
+  <div class="notif-row">
+    <button class="notif-btn" id="toggleNotif">🔕 Уведомления выкл</button>
+  </div>
+
+  <div class="days" id="dayTabs"></div>
+
+  <div class="clock-card">
+    <svg class="dial" viewBox="0 0 300 300"></svg>
+    <div class="now-label mono" id="nowLabel">—</div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="section-title">
+    <h2>Блоки дня</h2>
+    <button class="add-btn" id="toggleForm">+ Добавить</button>
+  </div>
+
+  <div class="form-card" id="formCard">
+    <div class="form-row">
+      <div>
+        <label>Начало</label>
+        <input type="time" id="fStart" value="18:00">
+      </div>
+      <div>
+        <label>Конец</label>
+        <input type="time" id="fEnd" value="19:00">
+      </div>
+    </div>
+    <div>
+      <label>Название</label>
+      <input type="text" id="fLabel" placeholder="Например: Монтаж">
+    </div>
+    <div>
+      <label>Тип</label>
+      <div class="type-grid" id="typeGrid"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-ghost" id="cancelForm">Отмена</button>
+      <button class="btn-primary" id="saveForm">Сохранить</button>
+    </div>
+  </div>
+
+  <div id="blocksList"></div>
+  <div class="empty" style="border:none; padding:6px 4px 0; text-align:left; font-size:12px;" id="editHint">Нажмите на блок, чтобы изменить его</div>
+
+  <div class="timers">
+    <div class="timer-card">
+      <h3>Помидор</h3>
+      <div class="pomo-type-toggle" id="pomoTypeToggle"></div>
+      <div class="pomo-addtype-form" id="pomoAddTypeForm" style="display:none;">
+        <input type="text" id="pomoNewTypeName" placeholder="Название раздела" maxlength="20">
+        <div class="pomo-addtype-actions">
+          <button class="btn-ghost" id="pomoAddTypeCancel">Отмена</button>
+          <button class="btn-primary" id="pomoAddTypeSave">Добавить</button>
+        </div>
+        <div class="pomo-custom-list" id="pomoCustomTypeList"></div>
+      </div>
+      <div class="timer-display mono" id="pomoDisplay">25:00</div>
+      <div class="timer-phase" id="pomoPhase">работа · цикл 1</div>
+      <div class="cycles" id="pomoCycles"></div>
+      <div class="pomo-stats mono" id="pomoStatsLine">Сегодня: 0 · Неделя: 0</div>
+      <div class="pomo-adjust">
+        <button class="padj-btn" id="pomoMinus" title="Убрать один помидор (текущий тип)">−1</button>
+        <span class="padj-hint mono" id="pomoAdjustHint">Ролик</span>
+        <button class="padj-btn" id="pomoPlus" title="Добавить один помидор (текущий тип)">+1</button>
+      </div>
+      <div class="timer-controls">
+        <button class="tbtn start" id="pomoStart">Старт</button>
+        <button class="tbtn stop" id="pomoReset">Сброс</button>
+      </div>
+    </div>
+
+    <div class="timer-card">
+      <h3>Свободный таймер</h3>
+      <div class="mode-toggle">
+        <button class="active" id="modeCountdown">Обратный</button>
+        <button id="modeStopwatch">Секундомер</button>
+      </div>
+      <div class="free-inputs" id="freeInputs">
+        <input type="number" id="freeMinutes" value="20" min="1" max="180"> <span class="mono" style="color:var(--muted); font-size:13px;">мин</span>
+      </div>
+      <div class="timer-display mono" id="freeDisplay">20:00</div>
+      <div class="timer-controls">
+        <button class="tbtn start" id="freeStart">Старт</button>
+        <button class="tbtn stop" id="freeReset">Сброс</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot-note">Данные хранятся только у вас в аккаунте.<br>Помидор: 25 работа / 5 отдых, каждые 4 — длинный 15–20 мин.</div>
+
+  </div><!-- /viewSchedule -->
+
+  <div id="viewHistory" style="display:none;">
+
+    <div class="stats-grid" id="historyStats"></div>
+    <div class="pomo-type-breakdown" id="pomoTypeBreakdown"></div>
+
+    <div class="clock-card">
+      <h3 style="align-self:flex-start; font-size:14px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.04em; font-family:'IBM Plex Sans';">Блоки по помидору в расписании</h3>
+      <div class="chart-hint">Ролик, письмо, учёба — типы, которые идут через Помидор</div>
+      <div id="pomoBlocksList" style="width:100%;"></div>
+    </div>
+
+    <div class="mode-toggle" id="histModeToggle" style="align-self:center; margin-top:18px;">
+      <button class="active" data-mode="week">Неделя</button>
+      <button data-mode="alltime">Всё время</button>
+    </div>
+
+    <div class="clock-card" id="weekChartCard" style="margin-top:10px;">
+      <h3 style="align-self:flex-start; font-size:14px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.04em; font-family:'IBM Plex Sans';">Эта неделя: план vs факт</h3>
+      <svg class="pomo-chart" viewBox="0 0 500 210" style="width:100%; height:auto; display:block;"></svg>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--amber)"></span>Нужно по расписанию</span>
+        <span><span class="dot" style="background:var(--teal)"></span>Сделано факт</span>
+      </div>
+    </div>
+
+    <div class="clock-card" id="alltimeChartCard" style="margin-top:10px; display:none;">
+      <h3 style="align-self:flex-start; font-size:14px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.04em; font-family:'IBM Plex Sans';">За всё время (по неделям)</h3>
+      <svg class="pomo-chart-alltime" viewBox="0 0 500 210" style="width:100%; height:auto; display:block;"></svg>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--teal)"></span>Сделано за неделю</span>
+        <span><span class="dot" style="background:var(--amber)"></span>Текущая неделя</span>
+      </div>
+    </div>
+
+  </div><!-- /viewHistory -->
+
+</div>
+
+<script>
+const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const TYPES = {
+  sleep:  {label:'Сон',      color:'#2A3550'},
+  work:   {label:'Работа',   color:'#E8A33D'},
+  byt:    {label:'Быт',      color:'#6B7280'},
+  rolik:  {label:'Ролик',    color:'#E4623F'},
+  pismo:  {label:'Письмо',   color:'#C8607A'},
+  ucheba: {label:'Учёба',    color:'#8B7FD1'},
+  free:   {label:'Свободно', color:'#4FB6A8'},
+};
+
+const DEFAULT_WEEK = {
+  'Пн': [
+    {s:'00:00',e:'08:00',l:'Работа',t:'work'},
+    {s:'08:00',e:'09:00',l:'Разгрузка',t:'byt'},
+    {s:'09:00',e:'17:00',l:'Сон',t:'sleep'},
+    {s:'17:00',e:'18:00',l:'Быт',t:'byt'},
+    {s:'18:00',e:'21:40',l:'Ролик целиком',t:'rolik'},
+    {s:'21:40',e:'22:30',l:'Письмо',t:'pismo'},
+    {s:'22:30',e:'23:30',l:'Свободно',t:'free'},
+  ],
+  'Ср': [
+    {s:'00:00',e:'08:00',l:'Работа',t:'work'},
+    {s:'08:00',e:'09:00',l:'Разгрузка',t:'byt'},
+    {s:'09:00',e:'17:00',l:'Сон',t:'sleep'},
+    {s:'17:00',e:'18:00',l:'Быт',t:'byt'},
+    {s:'18:00',e:'18:50',l:'Письмо',t:'pismo'},
+    {s:'18:50',e:'23:30',l:'Свободно',t:'free'},
+  ],
+  'Пт': [
+    {s:'00:00',e:'08:00',l:'Работа',t:'work'},
+    {s:'08:00',e:'09:00',l:'Разгрузка',t:'byt'},
+    {s:'09:00',e:'17:00',l:'Сон',t:'sleep'},
+    {s:'17:00',e:'18:00',l:'Быт',t:'byt'},
+    {s:'18:00',e:'18:50',l:'Письмо',t:'pismo'},
+    {s:'18:50',e:'23:30',l:'Свободно',t:'free'},
+  ],
+  'Вс': [
+    {s:'10:00',e:'11:00',l:'Закупка продуктов',t:'byt'},
+    {s:'11:00',e:'12:30',l:'Генеральная уборка',t:'byt'},
+    {s:'12:30',e:'23:30',l:'Свободно / письмо по желанию',t:'free'},
+  ],
+};
+['Вт','Чт','Сб'].forEach(d=>{
+  DEFAULT_WEEK[d] = [
+    {s:'00:00',e:'08:00',l:'Работа',t:'work'},
+    {s:'08:00',e:'09:00',l:'Разгрузка',t:'byt'},
+    {s:'09:00',e:'17:00',l:'Сон',t:'sleep'},
+    {s:'17:00',e:'18:00',l:'Быт',t:'byt'},
+    {s:'18:00',e:'19:00',l:'Учёба + письмо',t:'ucheba'},
+    {s:'19:00',e:'23:30',l:'Свободно',t:'free'},
+  ];
+});
+
+let week = null;
+let activeDay = 'Пн';
+
+function toMin(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+function fmtNow(){
+  const d = new Date();
+  return d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+function dateKey(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function mondayOf(d){
+  const diff = (d.getDay()+6)%7; // Пн=0 ... Вс=6
+  const m = new Date(d);
+  m.setDate(d.getDate()-diff);
+  m.setHours(0,0,0,0);
+  return m;
+}
+function todayDayKey(){
+  return DAYS[(new Date().getDay()+6)%7];
+}
+
+async function loadWeek(){
+  try{
+    const res = await window.storage.get('smena-week', false);
+    week = JSON.parse(res.value);
+  }catch(e){
+    week = JSON.parse(JSON.stringify(DEFAULT_WEEK));
+    await saveWeek();
+  }
+  renderDayTabs();
+  renderAll();
+}
+async function saveWeek(){
+  for(let attempt=0; attempt<2; attempt++){
+    try{
+      await window.storage.set('smena-week', JSON.stringify(week), false);
+      return;
+    }catch(e){
+      if(attempt===1) console.warn('smena: сохранение не удалось, изменения остаются только в текущей сессии');
+      await new Promise(r=>setTimeout(r, 400));
+    }
+  }
+}
+
+// ---- Pomodoro stats ----
+// pomoStats[dateKey] can be either a plain number (old format, total only)
+// or {total, byType:{rolik:n, pismo:n, ucheba:n, work:n}} (new format).
+let pomoStats = {};
+function pomoDayTotal(dstr){
+  const v = pomoStats[dstr];
+  if(!v) return 0;
+  return typeof v === 'number' ? v : (v.total || 0);
+}
+function pomoDayByType(dstr, type){
+  const v = pomoStats[dstr];
+  if(!v || typeof v === 'number') return 0;
+  return (v.byType && v.byType[type]) || 0;
+}
+async function loadPomoStats(){
+  try{
+    const res = await window.storage.get('smena-pomo-stats', false);
+    pomoStats = JSON.parse(res.value) || {};
+  }catch(e){
+    pomoStats = {};
+  }
+  renderPomoStatsLine();
+  renderHistoryStats();
+  renderPomoChart();
+  renderAllTimeChart();
+}
+async function savePomoStats(){
+  for(let attempt=0; attempt<2; attempt++){
+    try{
+      await window.storage.set('smena-pomo-stats', JSON.stringify(pomoStats), false);
+      return;
+    }catch(e){
+      if(attempt===1) console.warn('smena: статистика помидоров не сохранилась, изменения остаются только в текущей сессии');
+      await new Promise(r=>setTimeout(r, 400));
+    }
+  }
+}
+function recordCompletedPomo(type){
+  const k = dateKey(new Date());
+  const cur = pomoStats[k];
+  const entry = (cur && typeof cur === 'object') ? cur : {total:(typeof cur==='number'?cur:0), byType:{}};
+  entry.total = (entry.total||0) + 1;
+  entry.byType = entry.byType || {};
+  entry.byType[type] = (entry.byType[type]||0) + 1;
+  pomoStats[k] = entry;
+  savePomoStats();
+  renderPomoStatsLine();
+  renderHistoryStats();
+  renderPomoChart();
+  renderAllTimeChart();
+}
+function renderPomoStatsLine(){
+  const now = new Date();
+  const today = pomoDayTotal(dateKey(now));
+  const monday = mondayOf(now);
+  let weekTotal = 0;
+  for(let i=0;i<7;i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    weekTotal += pomoDayTotal(dateKey(d));
+  }
+  const el = document.getElementById('pomoStatsLine');
+  if(el) el.textContent = `Сегодня: ${today} · Неделя: ${weekTotal}`;
+}
+
+// ---- Notifications ----
+let notifEnabled = false;
+let notifiedBlocks = new Set();
+async function loadNotifPref(){
+  try{
+    const res = await window.storage.get('smena-notif-enabled', false);
+    notifEnabled = JSON.parse(res.value) === true;
+  }catch(e){
+    notifEnabled = false;
+  }
+  if(notifEnabled && (!('Notification' in window) || Notification.permission!=='granted')){
+    notifEnabled = false;
+  }
+  updateNotifBtn();
+}
+async function saveNotifPref(){
+  try{ await window.storage.set('smena-notif-enabled', JSON.stringify(notifEnabled), false); }catch(e){}
+}
+function updateNotifBtn(){
+  const btn = document.getElementById('toggleNotif');
+  if(!btn) return;
+  btn.textContent = notifEnabled ? '🔔 Уведомления вкл' : '🔕 Уведомления выкл';
+  btn.classList.toggle('active', notifEnabled);
+}
+function checkNotifications(){
+  if(!notifEnabled || !week) return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const now = new Date();
+  const hhmm = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  const blocks = week[todayDayKey()] || [];
+  const dKey = dateKey(now);
+  blocks.forEach(b=>{
+    if(b.s === hhmm){
+      const id = `${dKey}_${b.s}_${b.l}`;
+      if(!notifiedBlocks.has(id)){
+        notifiedBlocks.add(id);
+        try{
+          new Notification('Бытие', { body: `Пора: ${b.l} (${b.s}–${b.e})`, tag: id });
+        }catch(e){}
+      }
+    }
+  });
+}
+
+// ---- Required vs actual pomodoros chart ----
+// Типы блоков, которые ведутся через Помидор (согласно логике приложения):
+// письмо (ежедневно, без лимита сверх плана), учёба, ролик (сценарий + монотонные участки монтажа)
+const POMO_TRACKED_TYPES = ['pismo','ucheba','rolik'];
+function blockDurationMin(b){
+  let s = toMin(b.s), e = toMin(b.e);
+  if(e <= s) e += 1440;
+  return e - s;
+}
+function requiredPomosForDay(dayKey){
+  const blocks = week[dayKey] || [];
+  let totalMin = 0;
+  blocks.forEach(b=>{
+    if(POMO_TRACKED_TYPES.includes(b.t)) totalMin += blockDurationMin(b);
+  });
+  return Math.round(totalMin / 25);
+}
+
+function renderPomoChart(){
+  const svg = document.querySelector('svg.pomo-chart');
+  if(!svg || !week) return;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const W = 500, H = 210;
+  const padL = 8, padR = 8, padTop = 22, padBottom = 32;
+  const chartW = W - padL - padR;
+  const chartH = H - padTop - padBottom;
+  const groupW = chartW / 7;
+  const barW = Math.min(20, groupW/2 - 6);
+
+  const monday = mondayOf(new Date());
+  const today = todayDayKey();
+  const data = DAYS.map((d,i)=>{
+    const required = requiredPomosForDay(d);
+    const dt = new Date(monday); dt.setDate(monday.getDate()+i);
+    const done = pomoDayTotal(dateKey(dt));
+    return {d, required, done};
+  });
+  const maxVal = Math.max(1, ...data.map(x=>Math.max(x.required, x.done)));
+
+  const base = document.createElementNS(ns,'line');
+  base.setAttribute('x1',padL); base.setAttribute('x2',W-padR);
+  base.setAttribute('y1',padTop+chartH); base.setAttribute('y2',padTop+chartH);
+  base.setAttribute('stroke','#263047'); base.setAttribute('stroke-width',1);
+  svg.appendChild(base);
+
+  data.forEach(item=>{
+    const i = DAYS.indexOf(item.d);
+    const gx = padL + i*groupW;
+    const cx = gx + groupW/2;
+    const isToday = item.d === today;
+
+    const rH = (item.required/maxVal)*chartH;
+    const rBar = document.createElementNS(ns,'rect');
+    rBar.setAttribute('x', cx - barW - 2);
+    rBar.setAttribute('y', padTop+chartH-rH);
+    rBar.setAttribute('width', barW);
+    rBar.setAttribute('height', Math.max(rH,1));
+    rBar.setAttribute('rx', 3);
+    rBar.setAttribute('fill', '#E8A33D');
+    rBar.setAttribute('opacity', isToday ? '1' : '0.65');
+    svg.appendChild(rBar);
+
+    const dH = (item.done/maxVal)*chartH;
+    const dBar = document.createElementNS(ns,'rect');
+    dBar.setAttribute('x', cx + 2);
+    dBar.setAttribute('y', padTop+chartH-dH);
+    dBar.setAttribute('width', barW);
+    dBar.setAttribute('height', Math.max(dH,1));
+    dBar.setAttribute('rx', 3);
+    dBar.setAttribute('fill', '#4FB6A8');
+    dBar.setAttribute('opacity', isToday ? '1' : '0.65');
+    svg.appendChild(dBar);
+
+    if(item.required>0){
+      const rt = document.createElementNS(ns,'text');
+      rt.setAttribute('x', cx-barW/2-2); rt.setAttribute('y', Math.max(padTop+chartH-rH-5, padTop+8));
+      rt.setAttribute('text-anchor','middle'); rt.setAttribute('font-family','JetBrains Mono, monospace');
+      rt.setAttribute('font-size','10'); rt.setAttribute('fill','#E8A33D');
+      rt.textContent = item.required;
+      svg.appendChild(rt);
+    }
+    if(item.done>0){
+      const dtxt = document.createElementNS(ns,'text');
+      dtxt.setAttribute('x', cx+barW/2+2); dtxt.setAttribute('y', Math.max(padTop+chartH-dH-5, padTop+8));
+      dtxt.setAttribute('text-anchor','middle'); dtxt.setAttribute('font-family','JetBrains Mono, monospace');
+      dtxt.setAttribute('font-size','10'); dtxt.setAttribute('fill','#4FB6A8');
+      dtxt.textContent = item.done;
+      svg.appendChild(dtxt);
+    }
+
+    const lbl = document.createElementNS(ns,'text');
+    lbl.setAttribute('x', cx); lbl.setAttribute('y', padTop+chartH+18);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-family','JetBrains Mono, monospace');
+    lbl.setAttribute('font-size','11'); lbl.setAttribute('fill', isToday ? '#E8A33D' : '#8A93A6');
+    lbl.setAttribute('font-weight', isToday ? '700' : '400');
+    lbl.textContent = item.d;
+    svg.appendChild(lbl);
+  });
+}
+
+function renderHistoryStats(){
+  const el = document.getElementById('historyStats');
+  if(!el) return;
+  const now = new Date();
+  const today = pomoDayTotal(dateKey(now));
+  const monday = mondayOf(now);
+  let weekTotal = 0;
+  for(let i=0;i<7;i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    weekTotal += pomoDayTotal(dateKey(d));
+  }
+  const allTotal = Object.keys(pomoStats).reduce((a,k)=>a+pomoDayTotal(k),0);
+  el.innerHTML = `
+    <div class="stat-card"><div class="stat-num mono">${today}</div><div class="stat-label">Сегодня</div></div>
+    <div class="stat-card"><div class="stat-num mono">${weekTotal}</div><div class="stat-label">На неделе</div></div>
+    <div class="stat-card"><div class="stat-num mono">${allTotal}</div><div class="stat-label">Всего помидоров</div></div>
+  `;
+  renderPomoTypeBreakdown();
+}
+
+function renderPomoTypeBreakdown(){
+  const el = document.getElementById('pomoTypeBreakdown');
+  if(!el || typeof POMO_TYPE_OPTIONS === 'undefined') return;
+  const now = new Date();
+  const monday = mondayOf(now);
+  const weekDays = [];
+  for(let i=0;i<7;i++){ const d = new Date(monday); d.setDate(monday.getDate()+i); weekDays.push(dateKey(d)); }
+  el.innerHTML = POMO_TYPE_OPTIONS.map(t=>{
+    const weekN = weekDays.reduce((a,k)=>a+pomoDayByType(k,t),0);
+    const allN = Object.keys(pomoStats).reduce((a,k)=>a+pomoDayByType(k,t),0);
+    const dueTag = isTypeUntouchedToday(t) ? ' <span style="color:var(--rose)">· не начато</span>' : '';
+    return `<div class="ptb-row">
+      <span class="ptb-dot" style="background:${TYPES[t].color}"></span>
+      <span class="ptb-label">${TYPES[t].label}</span>
+      <span class="ptb-nums">нед ${weekN} · всего ${allN}${dueTag}</span>
+    </div>`;
+  }).join('');
+}
+
+function weekKeyOf(dstr){
+  const [y,m,d] = dstr.split('-').map(Number);
+  return dateKey(mondayOf(new Date(y, m-1, d)));
+}
+
+function renderAllTimeChart(){
+  const svg = document.querySelector('svg.pomo-chart-alltime');
+  if(!svg) return;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+
+  const weekTotals = {};
+  Object.keys(pomoStats).forEach(dstr=>{
+    const wk = weekKeyOf(dstr);
+    weekTotals[wk] = (weekTotals[wk]||0) + pomoDayTotal(dstr);
+  });
+  const currentWeekKey = dateKey(mondayOf(new Date()));
+  if(!(currentWeekKey in weekTotals)) weekTotals[currentWeekKey] = 0;
+  let weeks = Object.keys(weekTotals).sort();
+  if(weeks.length > 12) weeks = weeks.slice(-12);
+
+  const W=500, H=210, padL=8, padR=8, padTop=22, padBottom=34;
+  const chartW = W-padL-padR, chartH = H-padTop-padBottom;
+  const n = weeks.length;
+  const groupW = chartW/n;
+  const barW = Math.min(30, groupW*0.55);
+  const maxVal = Math.max(1, ...weeks.map(w=>weekTotals[w]||0));
+
+  const base = document.createElementNS(ns,'line');
+  base.setAttribute('x1',padL); base.setAttribute('x2',W-padR);
+  base.setAttribute('y1',padTop+chartH); base.setAttribute('y2',padTop+chartH);
+  base.setAttribute('stroke','#263047'); base.setAttribute('stroke-width',1);
+  svg.appendChild(base);
+
+  weeks.forEach((wk,i)=>{
+    const val = weekTotals[wk] || 0;
+    const cx = padL + i*groupW + groupW/2;
+    const h = (val/maxVal)*chartH;
+    const isCurrent = wk === currentWeekKey;
+    const color = isCurrent ? '#E8A33D' : '#4FB6A8';
+
+    const bar = document.createElementNS(ns,'rect');
+    bar.setAttribute('x', cx-barW/2);
+    bar.setAttribute('y', padTop+chartH-h);
+    bar.setAttribute('width', barW);
+    bar.setAttribute('height', Math.max(h,1));
+    bar.setAttribute('rx',3);
+    bar.setAttribute('fill', color);
+    svg.appendChild(bar);
+
+    if(val>0){
+      const t = document.createElementNS(ns,'text');
+      t.setAttribute('x',cx); t.setAttribute('y', Math.max(padTop+chartH-h-6, padTop+8));
+      t.setAttribute('text-anchor','middle'); t.setAttribute('font-family','JetBrains Mono, monospace');
+      t.setAttribute('font-size','10'); t.setAttribute('fill', color);
+      t.textContent = val;
+      svg.appendChild(t);
+    }
+
+    const [,mm,dd] = wk.split('-');
+    const lbl = document.createElementNS(ns,'text');
+    lbl.setAttribute('x',cx); lbl.setAttribute('y', padTop+chartH+18);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-family','JetBrains Mono, monospace');
+    lbl.setAttribute('font-size', n>8 ? '8.5':'10');
+    lbl.setAttribute('fill', isCurrent ? '#E8A33D' : '#8A93A6');
+    lbl.setAttribute('font-weight', isCurrent ? '700':'400');
+    lbl.textContent = `${dd}.${mm}`;
+    svg.appendChild(lbl);
+  });
+}
+
+function renderPomoBlocksList(){
+  const el = document.getElementById('pomoBlocksList');
+  if(!el || !week) return;
+  el.innerHTML = '';
+  let any = false;
+  DAYS.forEach(d=>{
+    const blocks = (week[d]||[])
+      .filter(b=>POMO_TRACKED_TYPES.includes(b.t))
+      .slice().sort((a,b)=>toMin(a.s)-toMin(b.s));
+    if(blocks.length===0) return;
+    any = true;
+    const dayHead = document.createElement('div');
+    dayHead.className = 'pomo-list-day';
+    dayHead.textContent = d;
+    el.appendChild(dayHead);
+    blocks.forEach(b=>{
+      const color = TYPES[b.t] ? TYPES[b.t].color : '#4FB6A8';
+      const row = document.createElement('div');
+      row.className = 'block-item';
+      row.innerHTML = `
+        <div class="block-bar" style="background:${color}"></div>
+        <div class="block-info">
+          <div class="block-time">${b.s}–${b.e}</div>
+          <div class="block-label">${b.l}</div>
+        </div>
+      `;
+      el.appendChild(row);
+    });
+  });
+  if(!any){
+    el.innerHTML = '<div class="empty">Пока нет блоков «письмо», «учёба» или «ролик» в расписании</div>';
+  }
+}
+
+document.querySelectorAll('#histModeToggle button').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('#histModeToggle button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.mode;
+    document.getElementById('weekChartCard').style.display = mode==='week' ? '' : 'none';
+    document.getElementById('alltimeChartCard').style.display = mode==='alltime' ? '' : 'none';
+  };
+});
+
+function renderHistoryView(){
+  renderHistoryStats();
+  renderPomoBlocksList();
+  renderPomoChart();
+  renderAllTimeChart();
+}
+
+function setView(v){
+  document.getElementById('viewSchedule').style.display = v==='schedule' ? '' : 'none';
+  document.getElementById('viewHistory').style.display = v==='history' ? '' : 'none';
+  document.querySelectorAll('.view-tab').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.view===v);
+  });
+  if(v==='history') renderHistoryView();
+}
+document.querySelectorAll('.view-tab').forEach(btn=>{
+  btn.onclick = ()=> setView(btn.dataset.view);
+});
+
+function renderDayTabs(){
+  const el = document.getElementById('dayTabs');
+  el.innerHTML = '';
+  DAYS.forEach(d=>{
+    const b = document.createElement('button');
+    b.className = 'day-btn' + (d===activeDay ? ' active':'');
+    b.textContent = d;
+    b.onclick = ()=>{ activeDay = d; renderDayTabs(); renderAll(); };
+    el.appendChild(b);
+  });
+}
+
+function renderAll(){
+  renderClock();
+  renderLegend();
+  renderBlocks();
+  renderPomoChart();
+  renderPomoBlocksList();
+  refreshPomoTypeUI();
+}
+
+function polar(cx,cy,r,angleDeg){
+  const a = (angleDeg-90) * Math.PI/180;
+  return { x: cx + r*Math.cos(a), y: cy + r*Math.sin(a) };
+}
+function arcPath(cx,cy,r,startAngle,endAngle){
+  if(endAngle - startAngle >= 359.9) endAngle = startAngle + 359.9;
+  const p1 = polar(cx,cy,r,startAngle);
+  const p2 = polar(cx,cy,r,endAngle);
+  const large = (endAngle-startAngle) > 180 ? 1 : 0;
+  return `M ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y}`;
+}
+
+function renderClock(){
+  const svg = document.querySelector('svg.dial');
+  svg.innerHTML = '';
+  const cx=150, cy=150, r=112, stroke=26;
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // base ring
+  const base = document.createElementNS(ns,'circle');
+  base.setAttribute('cx',cx); base.setAttribute('cy',cy); base.setAttribute('r',r);
+  base.setAttribute('fill','none'); base.setAttribute('stroke','#1B2436'); base.setAttribute('stroke-width',stroke);
+  svg.appendChild(base);
+
+  // hour ticks
+  for(let h=0; h<24; h++){
+    const ang = (h/24)*360;
+    const p1 = polar(cx,cy,r-stroke/2-3,ang);
+    const p2 = polar(cx,cy,r-stroke/2-9,ang);
+    const line = document.createElementNS(ns,'line');
+    line.setAttribute('x1',p1.x); line.setAttribute('y1',p1.y);
+    line.setAttribute('x2',p2.x); line.setAttribute('y2',p2.y);
+    line.setAttribute('stroke', h%6===0 ? '#3A4562' : '#22293C');
+    line.setAttribute('stroke-width', h%6===0 ? 2 : 1);
+    svg.appendChild(line);
+    if(h%6===0){
+      const lp = polar(cx,cy,r+22,ang);
+      const txt = document.createElementNS(ns,'text');
+      txt.setAttribute('x',lp.x); txt.setAttribute('y',lp.y+4);
+      txt.setAttribute('text-anchor','middle');
+      txt.setAttribute('font-family','JetBrains Mono, monospace');
+      txt.setAttribute('font-size','10.5');
+      txt.setAttribute('fill','#8A93A6');
+      txt.textContent = String(h).padStart(2,'0');
+      svg.appendChild(txt);
+    }
+  }
+
+  // blocks arcs
+  const blocks = (week[activeDay]||[]);
+  blocks.forEach(b=>{
+    let s = toMin(b.s)/1440*360;
+    let e = toMin(b.e)/1440*360;
+    if(e <= s) e += 360;
+    const path = document.createElementNS(ns,'path');
+    path.setAttribute('d', arcPath(cx,cy,r,s,e));
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke', TYPES[b.t] ? TYPES[b.t].color : '#4FB6A8');
+    path.setAttribute('stroke-width', stroke-4);
+    path.setAttribute('stroke-linecap','butt');
+    path.setAttribute('opacity','0.92');
+    svg.appendChild(path);
+  });
+
+  // center label
+  const centerT = document.createElementNS(ns,'text');
+  centerT.setAttribute('x',cx); centerT.setAttribute('y',cy-4);
+  centerT.setAttribute('text-anchor','middle');
+  centerT.setAttribute('font-family','Fraunces, serif');
+  centerT.setAttribute('font-size','22');
+  centerT.setAttribute('font-weight','600');
+  centerT.setAttribute('fill','#E9E4D8');
+  centerT.textContent = activeDay;
+  svg.appendChild(centerT);
+
+  const centerSub = document.createElementNS(ns,'text');
+  centerSub.setAttribute('x',cx); centerSub.setAttribute('y',cy+16);
+  centerSub.setAttribute('text-anchor','middle');
+  centerSub.setAttribute('font-family','JetBrains Mono, monospace');
+  centerSub.setAttribute('font-size','11');
+  centerSub.setAttribute('fill','#8A93A6');
+  centerSub.textContent = `${blocks.length} блок${blocks.length===1?'':blocks.length<5?'а':'ов'}`;
+  svg.appendChild(centerSub);
+
+  // current time hand (only meaningful visually, always shown)
+  const now = new Date();
+  const nowMin = now.getHours()*60+now.getMinutes();
+  const nowAng = nowMin/1440*360;
+  const hp = polar(cx,cy,r+13,nowAng);
+  const dot = document.createElementNS(ns,'circle');
+  dot.setAttribute('cx',hp.x); dot.setAttribute('cy',hp.y); dot.setAttribute('r',4.5);
+  dot.setAttribute('fill','#E9E4D8');
+  svg.appendChild(dot);
+
+  document.getElementById('nowLabel').textContent = 'сейчас · ' + fmtNow();
+}
+
+function renderLegend(){
+  const el = document.getElementById('legend');
+  el.innerHTML = '';
+  Object.entries(TYPES).forEach(([k,v])=>{
+    const span = document.createElement('span');
+    span.innerHTML = `<span class="dot" style="background:${v.color}"></span>${v.label}`;
+    el.appendChild(span);
+  });
+}
+
+function renderBlocks(){
+  const el = document.getElementById('blocksList');
+  const blocks = (week[activeDay]||[]).slice().sort((a,b)=>toMin(a.s)-toMin(b.s));
+  el.innerHTML = '';
+  if(blocks.length===0){
+    el.innerHTML = '<div class="empty">Пока пусто. Добавьте первый блок.</div>';
+    return;
+  }
+  blocks.forEach((b,idx)=>{
+    const item = document.createElement('div');
+    item.className = 'block-item';
+    const color = TYPES[b.t] ? TYPES[b.t].color : '#4FB6A8';
+    item.innerHTML = `
+      <div class="block-bar" style="background:${color}"></div>
+      <div class="block-info">
+        <div class="block-time">${b.s}–${b.e}</div>
+        <div class="block-label">${b.l}</div>
+      </div>
+      <button class="block-del" data-i="${idx}">×</button>
+    `;
+    item.onclick = (ev)=>{
+      if(ev.target.closest('.block-del')) return;
+      openEditForm(b);
+    };
+    el.appendChild(item);
+  });
+  el.querySelectorAll('.block-del').forEach(btn=>{
+    btn.onclick = async (ev)=>{
+      ev.stopPropagation();
+      const i = Number(btn.dataset.i);
+      const sorted = (week[activeDay]||[]).slice().sort((a,b)=>toMin(a.s)-toMin(b.s));
+      const toRemove = sorted[i];
+      week[activeDay] = week[activeDay].filter(b=>b!==toRemove);
+      await saveWeek();
+      renderAll();
+    };
+  });
+}
+
+// ---- add block form ----
+let selectedType = 'free';
+function renderTypeGrid(){
+  const el = document.getElementById('typeGrid');
+  el.innerHTML = '';
+  Object.entries(TYPES).forEach(([k,v])=>{
+    const chip = document.createElement('div');
+    chip.className = 'type-chip' + (k===selectedType?' selected':'');
+    chip.style.background = v.color;
+    chip.textContent = v.label;
+    chip.onclick = ()=>{ selectedType = k; renderTypeGrid(); };
+    el.appendChild(chip);
+  });
+}
+renderTypeGrid();
+
+document.getElementById('toggleNotif').onclick = async ()=>{
+  if(!notifEnabled){
+    if(!('Notification' in window)){
+      alert('Уведомления не поддерживаются в этом браузере');
+      return;
+    }
+    let perm = Notification.permission;
+    if(perm === 'default'){ perm = await Notification.requestPermission(); }
+    if(perm !== 'granted'){
+      alert('Разрешите уведомления в настройках браузера, чтобы приложение могло напоминать о блоках');
+      return;
+    }
+    notifEnabled = true;
+  } else {
+    notifEnabled = false;
+  }
+  await saveNotifPref();
+  updateNotifBtn();
+};
+
+document.getElementById('toggleForm').onclick = ()=>{
+  editingBlock = null;
+  document.getElementById('fLabel').value = '';
+  document.getElementById('saveForm').textContent = 'Сохранить';
+  document.getElementById('formCard').classList.add('open');
+};
+let editingBlock = null;
+function openEditForm(b){
+  editingBlock = b;
+  document.getElementById('fStart').value = b.s;
+  document.getElementById('fEnd').value = b.e;
+  document.getElementById('fLabel').value = b.l;
+  selectedType = b.t;
+  renderTypeGrid();
+  document.getElementById('saveForm').textContent = 'Сохранить изменения';
+  document.getElementById('formCard').classList.add('open');
+  document.getElementById('formCard').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+document.getElementById('cancelForm').onclick = ()=>{
+  editingBlock = null;
+  document.getElementById('saveForm').textContent = 'Сохранить';
+  document.getElementById('formCard').classList.remove('open');
+};
+document.getElementById('saveForm').onclick = async ()=>{
+  const s = document.getElementById('fStart').value;
+  const e = document.getElementById('fEnd').value;
+  const l = document.getElementById('fLabel').value.trim() || TYPES[selectedType].label;
+  if(!s || !e){ return; }
+  if(editingBlock){
+    editingBlock.s = s; editingBlock.e = e; editingBlock.l = l; editingBlock.t = selectedType;
+    editingBlock = null;
+  } else {
+    if(!week[activeDay]) week[activeDay] = [];
+    week[activeDay].push({s,e,l,t:selectedType});
+  }
+  await saveWeek();
+  document.getElementById('fLabel').value = '';
+  document.getElementById('saveForm').textContent = 'Сохранить';
+  document.getElementById('formCard').classList.remove('open');
+  renderAll();
+};
+
+// ---- Pomodoro timer ----
+const POMO_WORK = 25*60, POMO_SHORT = 5*60, POMO_LONG = 18*60;
+const POMO_TYPE_OPTIONS = ['rolik','pismo','ucheba'];
+const POMO_CUSTOM_PALETTE = ['#4FB6A8','#E8A33D','#C8607A','#8B7FD1','#E4623F','#6B7280'];
+let pomoSeconds = POMO_WORK;
+let pomoPhaseName = 'work';
+let pomoCycle = 1;
+let pomoRunning = false;
+let pomoInterval = null;
+let pomoActiveType = 'rolik';
+let pomoAutoMode = true;
+let customPomoTypes = [];
+
+async function loadCustomPomoTypes(){
+  try{
+    const res = await window.storage.get('smena-custom-pomo-types', false);
+    const parsed = JSON.parse(res.value);
+    if(Array.isArray(parsed)) customPomoTypes = parsed;
+  }catch(e){
+    customPomoTypes = [];
+  }
+  customPomoTypes.forEach(c=>{
+    TYPES[c.id] = {label:c.label, color:c.color};
+    if(!POMO_TYPE_OPTIONS.includes(c.id)) POMO_TYPE_OPTIONS.push(c.id);
+  });
+}
+async function saveCustomPomoTypes(){
+  try{ await window.storage.set('smena-custom-pomo-types', JSON.stringify(customPomoTypes), false); }catch(e){}
+}
+function addCustomPomoType(name){
+  name = name.trim();
+  if(!name) return;
+  const id = 'custom_' + Date.now();
+  const color = POMO_CUSTOM_PALETTE[customPomoTypes.length % POMO_CUSTOM_PALETTE.length];
+  customPomoTypes.push({id, label:name, color});
+  TYPES[id] = {label:name, color};
+  POMO_TYPE_OPTIONS.push(id);
+  saveCustomPomoTypes();
+  renderPomoTypeToggle();
+}
+function removeCustomPomoType(id){
+  customPomoTypes = customPomoTypes.filter(c=>c.id!==id);
+  delete TYPES[id];
+  const idx = POMO_TYPE_OPTIONS.indexOf(id);
+  if(idx>-1) POMO_TYPE_OPTIONS.splice(idx,1);
+  if(pomoActiveType === id){
+    pomoActiveType = 'rolik';
+    pomoAutoMode = true;
+    savePomoType();
+  }
+  saveCustomPomoTypes();
+  renderPomoTypeToggle();
+}
+
+// Which block (if any) covers the current moment, on today's schedule
+function findCurrentBlock(){
+  if(!week) return null;
+  const blocks = week[todayDayKey()] || [];
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  for(const b of blocks){
+    const s = toMin(b.s), e = toMin(b.e);
+    if(e <= s){ if(nowMin >= s || nowMin < e) return b; }
+    else{ if(nowMin >= s && nowMin < e) return b; }
+  }
+  return null;
+}
+function autoPomoTypeFromSchedule(){
+  const b = findCurrentBlock();
+  return (b && POMO_TYPE_OPTIONS.includes(b.t)) ? b.t : null;
+}
+// True once today's scheduled block of this type has started, and no such pomodoro logged yet today
+function isTypeDueToday(t){
+  if(!week) return false;
+  const blocks = week[todayDayKey()] || [];
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  return blocks.some(b=>{
+    if(b.t !== t) return false;
+    const s = toMin(b.s), e = toMin(b.e);
+    if(e <= s) return nowMin >= s || nowMin < e;
+    return nowMin >= s;
+  });
+}
+function isTypeUntouchedToday(t){
+  return isTypeDueToday(t) && pomoDayByType(dateKey(new Date()), t) === 0;
+}
+
+async function loadPomoType(){
+  try{
+    const res = await window.storage.get('smena-pomo-type', false);
+    const parsed = JSON.parse(res.value);
+    if(typeof parsed === 'string'){
+      // old format: a bare type string implied a manual choice
+      if(POMO_TYPE_OPTIONS.includes(parsed)){ pomoActiveType = parsed; pomoAutoMode = false; }
+    } else if(parsed && typeof parsed === 'object'){
+      if(typeof parsed.auto === 'boolean') pomoAutoMode = parsed.auto;
+      if(POMO_TYPE_OPTIONS.includes(parsed.type)) pomoActiveType = parsed.type;
+    }
+  }catch(e){}
+  renderPomoTypeToggle();
+}
+async function savePomoType(){
+  try{ await window.storage.set('smena-pomo-type', JSON.stringify({auto:pomoAutoMode, type:pomoActiveType}), false); }catch(e){}
+}
+// Keeps the active type synced with schedule (when in auto mode) and refreshes the "due" dots
+function refreshPomoTypeUI(){
+  if(pomoAutoMode && !pomoRunning){
+    const t = autoPomoTypeFromSchedule();
+    if(t && t !== pomoActiveType){ pomoActiveType = t; updatePomoDisplay(); }
+  }
+  renderPomoTypeToggle();
+}
+function renderPomoTypeToggle(){
+  const el = document.getElementById('pomoTypeToggle');
+  if(!el) return;
+  el.innerHTML = '';
+
+  const autoBtn = document.createElement('button');
+  autoBtn.type = 'button';
+  autoBtn.className = 'pomo-type-btn' + (pomoAutoMode ? ' active':'');
+  autoBtn.textContent = 'Авто';
+  autoBtn.disabled = pomoRunning;
+  if(pomoAutoMode) autoBtn.style.background = 'var(--teal)';
+  autoBtn.onclick = ()=>{
+    if(pomoRunning) return;
+    pomoAutoMode = true;
+    const t = autoPomoTypeFromSchedule();
+    if(t) pomoActiveType = t;
+    savePomoType();
+    renderPomoTypeToggle();
+    updatePomoDisplay();
+  };
+  el.appendChild(autoBtn);
+
+  POMO_TYPE_OPTIONS.forEach(t=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    const isActive = !pomoAutoMode && t===pomoActiveType;
+    const isResolved = pomoAutoMode && t===pomoActiveType;
+    btn.className = 'pomo-type-btn' + (isActive ? ' active':'') + (isResolved ? ' resolved':'') + (isTypeUntouchedToday(t) ? ' due':'');
+    btn.textContent = TYPES[t].label;
+    btn.disabled = pomoRunning;
+    if(isActive) btn.style.background = TYPES[t].color;
+    if(isResolved) btn.style.borderColor = TYPES[t].color;
+    btn.onclick = ()=>{
+      if(pomoRunning) return;
+      pomoAutoMode = false;
+      pomoActiveType = t;
+      savePomoType();
+      renderPomoTypeToggle();
+      updatePomoDisplay();
+    };
+    el.appendChild(btn);
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'pomo-type-btn add-new';
+  addBtn.textContent = '+ Раздел';
+  addBtn.disabled = pomoRunning;
+  addBtn.onclick = ()=>{
+    if(pomoRunning) return;
+    const form = document.getElementById('pomoAddTypeForm');
+    const open = form.style.display !== 'none';
+    form.style.display = open ? 'none' : 'flex';
+    if(!open) renderPomoCustomTypeList();
+  };
+  el.appendChild(addBtn);
+}
+function renderPomoCustomTypeList(){
+  const el = document.getElementById('pomoCustomTypeList');
+  if(!el) return;
+  if(customPomoTypes.length===0){
+    el.innerHTML = '<div style="font-size:12px; color:var(--muted);">Пока нет добавленных разделов</div>';
+    return;
+  }
+  el.innerHTML = customPomoTypes.map(c=>`
+    <div class="pcl-row">
+      <span class="pcl-dot" style="background:${c.color}"></span>
+      <span class="pcl-label">${c.label}</span>
+      <button class="pcl-del" data-id="${c.id}">×</button>
+    </div>
+  `).join('');
+  el.querySelectorAll('.pcl-del').forEach(btn=>{
+    btn.onclick = ()=> removeCustomPomoType(btn.dataset.id);
+  });
+}
+document.getElementById('pomoAddTypeSave').onclick = ()=>{
+  const input = document.getElementById('pomoNewTypeName');
+  addCustomPomoType(input.value);
+  input.value = '';
+  renderPomoCustomTypeList();
+};
+document.getElementById('pomoAddTypeCancel').onclick = ()=>{
+  document.getElementById('pomoAddTypeForm').style.display = 'none';
+  document.getElementById('pomoNewTypeName').value = '';
+};
+
+function beep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 660;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  }catch(e){}
+}
+
+function renderPomoCycles(){
+  const el = document.getElementById('pomoCycles');
+  el.innerHTML = '';
+  for(let i=1;i<=4;i++){
+    const dot = document.createElement('div');
+    dot.className = 'cycle-dot' + (i < pomoCycle || (i===pomoCycle && pomoPhaseName!=='work') ? ' done':'');
+    el.appendChild(dot);
+  }
+}
+
+function updatePomoDisplay(){
+  const m = Math.floor(pomoSeconds/60).toString().padStart(2,'0');
+  const s = Math.floor(pomoSeconds%60).toString().padStart(2,'0');
+  document.getElementById('pomoDisplay').textContent = `${m}:${s}`;
+  const phaseLabel = pomoPhaseName==='work' ? `работа · ${TYPES[pomoActiveType].label}` : (pomoPhaseName==='long' ? 'длинный отдых' : 'отдых');
+  document.getElementById('pomoPhase').textContent = `${phaseLabel} · цикл ${pomoCycle}`;
+  const hintEl = document.getElementById('pomoAdjustHint');
+  if(hintEl) hintEl.textContent = TYPES[pomoActiveType].label;
+  renderPomoCycles();
+}
+
+function pomoNextPhase(){
+  beep();
+  if(pomoPhaseName === 'work'){
+    recordCompletedPomo(pomoActiveType);
+    refreshPomoTypeUI();
+    if(pomoCycle % 4 === 0){
+      pomoPhaseName = 'long'; pomoSeconds = POMO_LONG;
+    } else {
+      pomoPhaseName = 'short'; pomoSeconds = POMO_SHORT;
+    }
+  } else {
+    if(pomoPhaseName === 'long'){ pomoCycle = 1; } else { pomoCycle += 1; }
+    pomoPhaseName = 'work'; pomoSeconds = POMO_WORK;
+  }
+  updatePomoDisplay();
+}
+
+function pomoTick(){
+  pomoSeconds -= 1;
+  if(pomoSeconds <= 0){ pomoNextPhase(); return; }
+  updatePomoDisplay();
+}
+
+document.getElementById('pomoStart').onclick = ()=>{
+  pomoRunning = !pomoRunning;
+  const btn = document.getElementById('pomoStart');
+  if(pomoRunning){
+    btn.textContent = 'Пауза';
+    pomoInterval = setInterval(pomoTick, 1000);
+  } else {
+    btn.textContent = 'Старт';
+    clearInterval(pomoInterval);
+  }
+  refreshPomoTypeUI();
+};
+document.getElementById('pomoReset').onclick = ()=>{
+  clearInterval(pomoInterval);
+  pomoRunning = false;
+  pomoPhaseName = 'work'; pomoSeconds = POMO_WORK; pomoCycle = 1;
+  document.getElementById('pomoStart').textContent = 'Старт';
+  updatePomoDisplay();
+  refreshPomoTypeUI();
+};
+function adjustPomoCount(delta){
+  const k = dateKey(new Date());
+  const cur = pomoStats[k];
+  const entry = (cur && typeof cur === 'object') ? cur : {total:(typeof cur==='number'?cur:0), byType:{}};
+  entry.byType = entry.byType || {};
+  const before = entry.byType[pomoActiveType] || 0;
+  const after = Math.max(0, before + delta);
+  const diff = after - before;
+  if(diff === 0) return;
+  entry.byType[pomoActiveType] = after;
+  entry.total = Math.max(0, (entry.total||0) + diff);
+  pomoStats[k] = entry;
+  savePomoStats();
+  renderPomoStatsLine();
+  renderHistoryStats();
+  renderPomoChart();
+  renderAllTimeChart();
+  refreshPomoTypeUI();
+}
+document.getElementById('pomoMinus').onclick = ()=> adjustPomoCount(-1);
+document.getElementById('pomoPlus').onclick = ()=> adjustPomoCount(1);
+updatePomoDisplay();
+
+// ---- Free timer ----
+let freeMode = 'countdown';
+let freeSeconds = 20*60;
+let freeElapsed = 0;
+let freeRunning = false;
+let freeInterval = null;
+
+function updateFreeDisplay(){
+  const total = freeMode==='countdown' ? freeSeconds : freeElapsed;
+  const m = Math.floor(total/60).toString().padStart(2,'0');
+  const s = Math.floor(total%60).toString().padStart(2,'0');
+  document.getElementById('freeDisplay').textContent = `${m}:${s}`;
+}
+
+document.getElementById('modeCountdown').onclick = ()=>{
+  freeMode = 'countdown';
+  document.getElementById('modeCountdown').classList.add('active');
+  document.getElementById('modeStopwatch').classList.remove('active');
+  document.getElementById('freeInputs').style.display = 'flex';
+  freeSeconds = Number(document.getElementById('freeMinutes').value)*60;
+  updateFreeDisplay();
+};
+document.getElementById('modeStopwatch').onclick = ()=>{
+  freeMode = 'stopwatch';
+  document.getElementById('modeStopwatch').classList.add('active');
+  document.getElementById('modeCountdown').classList.remove('active');
+  document.getElementById('freeInputs').style.display = 'none';
+  freeElapsed = 0;
+  updateFreeDisplay();
+};
+document.getElementById('freeMinutes').onchange = ()=>{
+  freeSeconds = Number(document.getElementById('freeMinutes').value)*60;
+  if(!freeRunning) updateFreeDisplay();
+};
+
+document.getElementById('freeStart').onclick = ()=>{
+  freeRunning = !freeRunning;
+  const btn = document.getElementById('freeStart');
+  if(freeRunning){
+    btn.textContent = 'Пауза';
+    freeInterval = setInterval(()=>{
+      if(freeMode==='countdown'){
+        freeSeconds -= 1;
+        if(freeSeconds<=0){ freeSeconds=0; beep(); freeRunning=false; clearInterval(freeInterval); btn.textContent='Старт'; }
+      } else {
+        freeElapsed += 1;
+      }
+      updateFreeDisplay();
+    }, 1000);
+  } else {
+    btn.textContent = 'Старт';
+    clearInterval(freeInterval);
+  }
+};
+document.getElementById('freeReset').onclick = ()=>{
+  clearInterval(freeInterval);
+  freeRunning = false;
+  document.getElementById('freeStart').textContent = 'Старт';
+  if(freeMode==='countdown'){ freeSeconds = Number(document.getElementById('freeMinutes').value)*60; }
+  else { freeElapsed = 0; }
+  updateFreeDisplay();
+};
+updateFreeDisplay();
+
+// refresh clock hand + now label every 30s, also check schedule for notifications
+setInterval(()=>{
+  if(week) renderClock();
+  checkNotifications();
+  refreshPomoTypeUI();
+}, 30000);
+
+Promise.all([loadWeek(), loadPomoStats(), loadCustomPomoTypes(), loadPomoType(), loadNotifPref()]).then(()=>{
+  refreshPomoTypeUI();
+});
+</script>
+</body>
+</html>
